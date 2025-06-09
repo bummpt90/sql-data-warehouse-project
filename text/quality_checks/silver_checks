@@ -1,0 +1,184 @@
+--USE DataWarehouse
+--Table bronze.crm_cust_info
+--Checking for Nulls in Primary key and duplicates in primary key
+SELECT
+	cst_id,
+	COUNT(*) countrow
+FROM 
+	bronze.crm_cust_info
+GROUP BY
+	cst_id
+HAVING 
+	COUNT(*) > 1 OR cst_id IS NULL
+
+
+--Checking for whitespaces or unwanted spaces.
+SELECT
+	cst_lastname
+	--cst_lastname
+FROM
+	silver.crm_cust_info
+WHERE
+	cst_lastname != TRIM(cst_lastname)
+
+--Checking for data consistency and standardization(Ensure the abbreviations are not duplicated)
+SELECT DISTINCT
+	cst_marital_status
+	--cst_gndr
+FROM
+	bronze.crm_cust_info
+
+
+
+
+--Table bronze.crm_prd_info Check
+--Check for NULLs or duplicates in the primary key
+SELECT
+prd_id,
+COUNT(*)
+FROM
+	bronze.crm_prd_info
+GROUP BY prd_id
+HAVING COUNT(*) > 1 OR prd_id IS NULL
+
+
+--Checking for unwanted spaces in bronze.crm_prd_info
+SELECT
+	prd_nm
+FROM
+	bronze.crm_prd_info
+WHERE
+	prd_nm != TRIM(prd_nm)
+
+
+
+--Checking for NULLs and negative numbers bronze.crm_prd_info
+SELECT
+	prd_cost
+FROM
+	bronze.crm_prd_info
+WHERE
+	prd_cost <= 0 Or prd_cost IS NULL
+
+
+--Checking for cardinality that is standardization
+SELECT DISTINCT
+	prd_line
+FROM
+	bronze.crm_prd_info;
+
+
+
+--Checking for the quality of start and end date.
+SELECT 
+    sls_order_dt
+    --sls_ship_dt,
+    --sls_due_dt,
+   
+FROM
+	bronze.crm_sls_details
+WHERE sls_order_dt <= 0
+	OR LEN(sls_order_dt) != 8
+	OR sls_order_dt > 20500101
+	OR sls_order_dt < 19000101
+
+SELECT 
+    sls_order_dt
+    --sls_ship_dt,
+    --sls_due_dt,
+   
+FROM
+	bronze.crm_sls_details
+WHERE sls_ship_dt <= 0
+	OR LEN(sls_ship_dt) != 8
+	OR sls_ship_dt > 20500101
+	OR sls_ship_dt < 19000101
+
+
+SELECT 
+    sls_order_dt
+    --sls_ship_dt,
+    --sls_due_dt,
+   
+FROM
+	bronze.crm_sls_details
+WHERE sls_due_dt <= 0
+	OR LEN(sls_due_dt) != 8
+	OR sls_due_dt > 20500101
+	OR sls_due_dt < 19000101
+
+
+
+SELECT
+	CASE
+		WHEN sls_sales IS NULL OR sls_sales <= 0 OR  sls_sales != sls_quantity * ABS(sls_price) THEN sls_quantity * ABS(sls_price)
+		ELSE sls_sales
+	END sls_sales,
+	CASE	
+		WHEN sls_price IS NULL OR sls_price <= 0  THEN sls_sales/ NULLIF(sls_quantity,0)
+		ELSE sls_price
+	END sls_price,
+	sls_quantity,
+	sls_price
+FROM
+	bronze.crm_sls_details
+
+
+
+SELECT DISTINCT
+--Checking for key to match the table to be joined.
+	/*CASE
+		WHEN cid LIKE 'NAS%' THEN SUBSTRING(cid, 4, LEN(cid))
+		ELSE cid
+	END cid,*/
+	bdate
+
+
+	--gen
+FROM
+	bronze.erp_cust_az12
+WHERE
+	bdate < '1930-01-01' OR bdate > GETDATE()
+
+
+
+SELECT DISTINCT
+	gen
+FROM
+	bronze.erp_cust_az12
+
+
+
+SELECT DISTINCT
+	cntry as oldcontry,
+	CASE
+		WHEN TRIM(cntry) = 'de'	THEN 'Germany'
+		WHEN TRIM(cntry) IN ('US', 'USA') THEN 'United States'
+		WHEN TRIM(cntry) = '' OR cntry IS NULL THEN 'n/a'
+		ELSE TRIM(cntry)
+	END cntry
+
+FROM
+	bronze.erp_loc_a101
+
+SELECT
+	--id,
+	cat,
+	subcat,
+	maintenance
+FROM
+	bronze.erp_px_cat_g1v2
+
+--Checking for Unwanted spaces.
+SELECT 
+	*
+FROM
+	bronze.erp_px_cat_g1v2
+WHERE
+	cat != TRIM(cat) OR subcat != TRIM(subcat) OR maintenance != TRIM(maintenance)
+
+--Checking for low cardinality
+SELECT DISTINCT
+	maintenance
+FROM
+	bronze.erp_px_cat_g1v2
